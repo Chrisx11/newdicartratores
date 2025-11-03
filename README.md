@@ -1,73 +1,123 @@
-# Welcome to your Lovable project
+# Dicar Tratores Connect
 
-## Project info
+Sistema de gestão para Dicar Tratores - desenvolvido com React, TypeScript e Supabase.
 
-**URL**: https://lovable.dev/projects/e8da8551-138a-40e2-8977-e76e925b2c16
+## 🚀 Tecnologias
 
-## How can I edit this code?
+- **Vite** - Build tool
+- **TypeScript** - Tipagem estática
+- **React** - Biblioteca UI
+- **shadcn-ui** - Componentes UI
+- **Tailwind CSS** - Estilização
+- **Supabase** - Backend e autenticação
+- **React Router** - Roteamento
 
-There are several ways of editing your application.
+## 📋 Pré-requisitos
 
-**Use Lovable**
+- Node.js 18+ instalado
+- npm ou yarn
+- Conta no Supabase (já configurada)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e8da8551-138a-40e2-8977-e76e925b2c16) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## 🛠️ Instalação e Desenvolvimento
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Instalar dependências
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Iniciar servidor de desenvolvimento
 npm run dev
+
+# Build para produção
+npm run build
+
+# Preview do build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+## 📦 Deploy no Vercel
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+O projeto está preparado para deploy no Vercel. Siga estes passos:
 
-**Use GitHub Codespaces**
+### Opção 1: Deploy via GitHub (Recomendado)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Faça push do código para o GitHub (veja instruções abaixo)
+2. Acesse [Vercel](https://vercel.com) e faça login
+3. Clique em "New Project"
+4. Conecte seu repositório GitHub
+5. Selecione este repositório
+6. O Vercel detectará automaticamente as configurações do `vercel.json`
+7. Clique em "Deploy"
 
-## What technologies are used for this project?
+### Opção 2: Deploy via Vercel CLI
 
-This project is built with:
+```sh
+# Instalar Vercel CLI
+npm i -g vercel
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Fazer deploy
+vercel
+```
 
-## How can I deploy this project?
+### Variáveis de Ambiente
 
-Simply open [Lovable](https://lovable.dev/projects/e8da8551-138a-40e2-8977-e76e925b2c16) and click on Share -> Publish.
+Se necessário configurar variáveis de ambiente no Vercel:
 
-## Can I connect a custom domain to my Lovable project?
+1. Acesse as configurações do projeto no Vercel
+2. Vá em "Settings" > "Environment Variables"
+3. Adicione as variáveis necessárias (ex: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
 
-Yes, you can!
+## 📤 Publicar no GitHub
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 1. Criar repositório no GitHub
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. Acesse [GitHub](https://github.com) e faça login
+2. Clique no botão "+" no canto superior direito
+3. Selecione "New repository"
+4. Escolha um nome (ex: `dicar-tratores-connect`)
+5. NÃO marque "Initialize this repository with a README"
+6. Clique em "Create repository"
+
+### 2. Conectar repositório local ao GitHub
+
+```sh
+# Adicionar repositório remoto (substitua USERNAME e REPO_NAME)
+git remote add origin https://github.com/USERNAME/REPO_NAME.git
+
+# Renomear branch para main (se necessário)
+git branch -M main
+
+# Fazer push para GitHub
+git push -u origin main
+```
+
+### 3. Verificar push
+
+Após o push, seu código estará disponível no GitHub e você poderá conectar o repositório ao Vercel para deploy automático.
+
+## 📁 Estrutura do Projeto
+
+```
+├── public/          # Arquivos estáticos
+├── src/
+│   ├── components/  # Componentes React
+│   ├── contexts/    # Contextos React (Auth)
+│   ├── hooks/       # Custom hooks
+│   ├── lib/         # Utilitários (Supabase, utils)
+│   ├── pages/       # Páginas da aplicação
+│   └── utils/       # Funções auxiliares
+├── sql/             # Scripts SQL
+├── vercel.json      # Configuração Vercel
+└── package.json     # Dependências
+```
+
+## 🔒 Segurança
+
+⚠️ **Importante**: As credenciais do Supabase estão atualmente no código. Para produção, considere:
+
+1. Usar variáveis de ambiente
+2. Criar arquivo `.env.local` (já está no .gitignore)
+3. Configurar variáveis no Vercel
+
+## 📝 Licença
+
+Este projeto é privado e de uso interno.
