@@ -9,10 +9,16 @@ export const MainLayout = () => {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 relative">
-          <SidebarTrigger className="absolute top-6 left-6 z-10" />
-          <div className="pt-[68px] pb-8">
-            <Separator className="mb-6 w-full" />
-            <div className="px-6 max-w-7xl mx-auto">
+          {/* Barra superior fixa com blur e sombra */}
+          <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm pt-6">
+            <div className="flex items-center justify-between px-6 pb-4">
+              <SidebarTrigger />
+              <div className="flex-1" />
+            </div>
+            <Separator className="w-full" />
+          </div>
+          <div className="pb-8">
+            <div className="px-6 max-w-7xl mx-auto pt-6">
               <Outlet />
             </div>
           </div>
