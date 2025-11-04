@@ -9,7 +9,7 @@ import {
   LogOut,
   Truck
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -41,6 +41,7 @@ export function AppSidebar() {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const collapsed = state === "collapsed";
 
   const handleLogout = async () => {
@@ -57,7 +58,7 @@ export function AppSidebar() {
             <SidebarHeader className="!pt-6">
         <div className="flex items-center justify-center">
           {!collapsed && (
-            <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">                                          
+            <span className="text-lg font-bold text-primary">                                          
               Dicar Tratores
             </span>
           )}
@@ -75,23 +76,26 @@ export function AppSidebar() {
           <Separator className="my-2" />
           <SidebarGroupContent className="px-2">
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={isActive
+                          ? "bg-primary text-black font-medium hover:bg-primary/90 transition-colors duration-200 [&_svg]:text-black"                                                                      
+                          : "hover:bg-sidebar-accent/50 transition-colors duration-200"
+                        }
+                      >
+                        <Icon className="h-5 w-5" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

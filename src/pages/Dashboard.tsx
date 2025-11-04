@@ -9,7 +9,10 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { format, subDays, startOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Receipt } from 'lucide-react';
 
 // Função para formatar valores monetários
 function formatarMoeda(valor) {
@@ -288,7 +291,7 @@ const Dashboard = () => {
   const chartConfig = {
     vendas: {
       label: 'Vendas',
-      color: 'hsl(var(--chart-1))',
+      color: 'hsl(var(--primary))',
     },
   };
 
@@ -326,27 +329,7 @@ const Dashboard = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-10 w-48 mb-2" />
-          <Skeleton className="h-5 w-64" />
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-24 mb-2" />
-                <Skeleton className="h-3 w-20" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
@@ -358,28 +341,38 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-responsive md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-responsive md:grid-cols-2 lg:grid-cols-4 gap-4">      
         {stats.map((stat, index) => (
-          <Card key={stat.title} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card 
+            key={stat.title} 
+            className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300 animate-fade-in border-l-4 border-l-primary/20 hover:border-l-primary/60 group" 
+            style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}
+          >             
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">                                                                  
+              <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors"> 
                 {stat.title}
               </CardTitle>
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <div className={`p-2 rounded-lg bg-primary/10 ${stat.color} transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20`}>
+                <stat.icon className="h-5 w-5" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-bold mb-1">{stat.value}</div>
               {stat.change !== null && (
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">                                                                      
                   {stat.changeType === 'increase' ? (
                     <ArrowUpRight className="h-3 w-3 text-primary" />
-                  ) : (
+                  ) : stat.changeType === 'decrease' ? (
                     <ArrowDownRight className="h-3 w-3 text-destructive" />
+                  ) : null}
+                  {stat.change && (
+                    <>
+                      <span className={stat.changeType === 'increase' ? 'text-primary font-semibold' : stat.changeType === 'decrease' ? 'text-destructive font-semibold' : ''}>                                                       
+                        {stat.change}
+                      </span>
+                      {' '}desde o último mês
+                    </>
                   )}
-                  <span className={stat.changeType === 'increase' ? 'text-primary' : 'text-destructive'}>
-                    {stat.change}
-                  </span>
-                  {' '}desde o último mês
                 </p>
               )}
             </CardContent>
@@ -388,85 +381,117 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-responsive md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-1 md:col-span-2 lg:col-span-4 shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
+                <Card className="col-span-1 md:col-span-2 lg:col-span-4 shadow-[var(--shadow-card)] animate-fade-in hover:shadow-[var(--shadow-elegant)] transition-all duration-300" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>                                                                     
           <CardHeader>
-            <CardTitle>Vendas dos Últimos 30 Dias</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Vendas dos Últimos 30 Dias
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {vendasPorDia.length > 0 ? (
-              <ChartContainer config={chartConfig}>
+                        {vendasPorDia.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px]">
                 <AreaChart data={vendasPorDia}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <defs>
+                    <linearGradient id="colorVendas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/50" />                                                                              
                   <XAxis
                     dataKey="data"
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
+                    className="text-xs"
                   />
                   <YAxis
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
                     tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                    className="text-xs"
                   />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent 
+                  <ChartTooltip
+                    content={<ChartTooltipContent
                       formatter={(value) => [formatarMoeda(value), 'Vendas']}
-                    />} 
+                      className="rounded-lg border bg-background shadow-md"
+                    />}
                   />
                   <Area
                     type="monotone"
                     dataKey="total"
-                    stroke="var(--color-vendas)"
-                    fill="var(--color-vendas)"
-                    fillOpacity={0.2}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#colorVendas)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--background))' }}
                   />
                 </AreaChart>
               </ChartContainer>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhuma venda registrada nos últimos 30 dias.
-              </p>
+              <EmptyState
+                icon={TrendingUp}
+                title="Nenhuma venda registrada"
+                description="Não há vendas registradas nos últimos 30 dias. Quando houver vendas, elas aparecerão aqui."
+              />
             )}
           </CardContent>
         </Card>
 
-        <Card className="col-span-1 md:col-span-2 lg:col-span-3 shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+                <Card className="col-span-1 md:col-span-2 lg:col-span-3 shadow-[var(--shadow-card)] animate-fade-in hover:shadow-[var(--shadow-elegant)] transition-all duration-300" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>                                                                     
           <CardHeader>
-            <CardTitle>Produtos Mais Vendidos</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Produtos Mais Vendidos
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {produtosMaisVendidos.length > 0 ? (
-              <div className="space-y-4">
+                        {produtosMaisVendidos.length > 0 ? (
+              <div className="space-y-3">
                 {produtosMaisVendidos.map((produto, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{produto.descricao}</p>
-                      <p className="text-xs text-muted-foreground">{produto.codigo}</p>
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors duration-200 group"
+                  >                                                                               
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm group-hover:bg-primary/20 transition-colors">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium group-hover:text-primary transition-colors">{produto.descricao}</p>
+                        <p className="text-xs text-muted-foreground">{produto.codigo}</p>                                                                         
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold">{produto.quantidade.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">unidades</p>
+                      <p className="text-sm font-bold text-primary">{produto.quantidade.toFixed(2)}</p>                                                                      
+                      <p className="text-xs text-muted-foreground">unidades</p> 
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhum produto vendido ainda.
-              </p>
+              <EmptyState
+                icon={Package}
+                title="Nenhum produto vendido"
+                description="Ainda não há produtos vendidos. Quando houver vendas, os produtos mais vendidos aparecerão aqui."
+              />
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-responsive md:grid-cols-2">
-        <Card className="shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+      <div className="grid grid-responsive md:grid-cols-2 gap-4">
+                <Card className="shadow-[var(--shadow-card)] animate-fade-in hover:shadow-[var(--shadow-elegant)] transition-all duration-300" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>                            
           <CardHeader>
-            <CardTitle>Vendas Recentes</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" />
+              Vendas Recentes
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {vendasRecentes.length > 0 ? (
+                        {vendasRecentes.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -478,33 +503,43 @@ const Dashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {vendasRecentes.map((venda) => (
-                    <TableRow key={venda.id}>
-                      <TableCell className="font-medium">{venda.cliente}</TableCell>
-                      <TableCell>{formatarMoeda(venda.total)}</TableCell>
+                    <TableRow key={venda.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium">{venda.cliente}</TableCell>                                                                            
+                      <TableCell className="font-semibold text-primary">{formatarMoeda(venda.total)}</TableCell>       
                       <TableCell>
-                        <Badge variant={venda.status === 'Pago' ? 'default' : 'secondary'}>
+                        <Badge 
+                          variant={
+                            venda.status === 'Pago' ? 'success' :
+                            venda.status === 'Em Aberto' ? 'warning' :
+                            'info'
+                          }
+                        >                                                                     
                           {venda.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        {format(parseISO(venda.data), 'dd/MM/yyyy', { locale: ptBR })}
+                      <TableCell className="text-right text-muted-foreground">
+                        {format(parseISO(venda.data), 'dd/MM/yyyy', { locale: ptBR })}                                                                          
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhuma venda registrada ainda.
-              </p>
+              <EmptyState
+                icon={Receipt}
+                title="Nenhuma venda registrada"
+                description="Ainda não há vendas registradas. Quando houver vendas, as mais recentes aparecerão aqui."
+              />
             )}
           </CardContent>
         </Card>
 
-                <Card className="shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
+                        <Card className="shadow-[var(--shadow-card)] animate-fade-in border-t-4 border-t-destructive/30" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>                    
           <CardHeader className="flex flex-row items-center justify-between">   
             <CardTitle>Estoque Baixo</CardTitle>
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div className="p-2 rounded-lg bg-destructive/10">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+            </div>
           </CardHeader>
           <CardContent>
             {produtosEstoqueBaixo.length > 0 ? (
@@ -512,20 +547,22 @@ const Dashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Produto</TableHead>
-                    <TableHead className="text-right">Estoque</TableHead>
+                    <TableHead className="text-right">Estoque</TableHead>       
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {produtosEstoqueBaixo.map((produto) => (
-                    <TableRow key={produto.codigo}>
+                    <TableRow key={produto.codigo} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
                         <div>
-                          <p className="font-medium text-sm">{produto.descricao}</p>
-                          <p className="text-xs text-muted-foreground">{produto.codigo}</p>
+                          <p className="font-medium text-sm">{produto.descricao}</p>                                                                            
+                          <p className="text-xs text-muted-foreground">{produto.codigo}</p>                                                                     
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Badge variant={produto.estoque <= 5 ? 'destructive' : 'secondary'}>
+                        <Badge 
+                          variant={produto.estoque <= 5 ? 'destructive' : produto.estoque <= 7 ? 'warning' : 'secondary'}
+                        >                                                                    
                           {produto.estoque.toFixed(2)}
                         </Badge>
                       </TableCell>
@@ -534,9 +571,11 @@ const Dashboard = () => {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Todos os produtos estão com estoque adequado.
-              </p>
+              <EmptyState
+                icon={Package}
+                title="Estoque adequado"
+                description="Todos os produtos estão com estoque adequado. Quando houver produtos com estoque baixo, eles aparecerão aqui."
+              />
             )}
           </CardContent>
         </Card>
