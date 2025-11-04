@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, X, ShoppingCart, Pencil, Eye, Package, ChevronUp, ChevronDown, CheckCircle2, MoreVertical, FileText } from 'lucide-react';
+import { Plus, Trash2, X, ShoppingCart, Pencil, Eye, Package, ChevronUp, ChevronDown, CheckCircle2, MoreVertical, FileText, RefreshCw } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
 import jsPDF from 'jspdf';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -58,6 +61,7 @@ const Saidas = () => {
     servicos: [],
     veiculo: '',
     observacoes: '',
+    codigo: '',
     status: 'Em Aberto',
     desconto: '',
     data: new Date().toISOString().split('T')[0] // Data padrão: hoje no formato YYYY-MM-DD
@@ -78,6 +82,9 @@ const Saidas = () => {
   const [excluirDialogOpen, setExcluirDialogOpen] = useState(false);
   const [vendaParaExcluir, setVendaParaExcluir] = useState(null);
   const [vendaParaEditar, setVendaParaEditar] = useState(null);
+  const [mudarStatusDialogOpen, setMudarStatusDialogOpen] = useState(false);
+  const [vendaParaMudarStatus, setVendaParaMudarStatus] = useState(null);
+  const [novoStatus, setNovoStatus] = useState('Em Aberto');
   const [sucessoDialogOpen, setSucessoDialogOpen] = useState(false);
   const [totalVendaSucesso, setTotalVendaSucesso] = useState(0);
 
@@ -184,6 +191,7 @@ const Saidas = () => {
         servicos: venda.servicos || [],
         veiculo: venda.veiculo || '',
         observacoes: venda.observacoes || '',
+        codigo: venda.codigo || '',
         status: venda.status || 'Em Aberto',
         desconto: venda.desconto ? venda.desconto.toString() : '0',
         total: parseFloat(venda.total) || 0,
@@ -334,15 +342,20 @@ const Saidas = () => {
 
     yPosition += 5;
 
-    // Informações da venda
-    addText('DATA: ' + formatarData(venda.data), margin, yPosition, { fontSize: 10 });
-    addText('STATUS: ' + (venda.status || 'Em Aberto'), pageWidth - margin, yPosition, { fontSize: 10, align: 'right' });
-    yPosition += 7;
-
-    if (venda.veiculo) {
-      addText('VEÍCULO: ' + venda.veiculo, margin, yPosition, { fontSize: 10 });
+          // Informações da venda
+      addText('DATA: ' + formatarData(venda.data), margin, yPosition, { fontSize: 10 });
+      addText('STATUS: ' + (venda.status || 'Em Aberto'), pageWidth - margin, yPosition, { fontSize: 10, align: 'right' });
       yPosition += 7;
-    }
+
+      if (venda.codigo) {
+        addText('CÓDIGO: ' + venda.codigo, margin, yPosition, { fontSize: 10 });
+        yPosition += 7;
+      }
+
+      if (venda.veiculo) {
+        addText('VEÍCULO: ' + venda.veiculo, margin, yPosition, { fontSize: 10 });
+        yPosition += 7;
+      }
 
     // Linha separadora
     doc.setDrawColor(200, 200, 200);
@@ -524,6 +537,40 @@ const Saidas = () => {
     doc.save(fileName);
   };
 
+  // Função para mudar status da venda
+  const handleMudarStatus = (index) => {
+    const venda = vendasFiltradas[(page-1)*perPage + index];
+    setVendaParaMudarStatus(venda);
+    setNovoStatus(venda.status || 'Em Aberto');
+    setMudarStatusDialogOpen(true);
+  };
+
+  const confirmarMudancaStatus = async () => {
+    if (!vendaParaMudarStatus || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('vendas')
+        .update({ status: novoStatus })
+        .eq('id', vendaParaMudarStatus.id);
+
+      if (error) {
+        console.error('Erro ao atualizar status:', error);
+        toast.error('Erro ao atualizar status');
+        return;
+      }
+
+      toast.success('Status atualizado com sucesso!');
+      await carregarVendas();
+      setMudarStatusDialogOpen(false);
+      setVendaParaMudarStatus(null);
+      setNovoStatus('Em Aberto');
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
   // Função para excluir venda
   const handleExcluirVenda = (index) => {
     const venda = vendasFiltradas[(page-1)*perPage + index];
@@ -583,6 +630,7 @@ const Saidas = () => {
       })),
       veiculo: venda.veiculo || '',
       observacoes: venda.observacoes || '',
+      codigo: venda.codigo || '',
       status: venda.status || 'Em Aberto',
       desconto: venda.desconto ? String(venda.desconto) : '',
       data: venda.data ? new Date(venda.data).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
@@ -818,6 +866,16 @@ const Saidas = () => {
       return;
     }
 
+    // Gerar código se não existir (para garantir que sempre tenha código)
+    let codigoVenda = vendaData.codigo && vendaData.codigo.trim() !== '' 
+      ? vendaData.codigo.trim() 
+      : await gerarCodigoVenda();
+    
+    // Atualizar estado com o código se necessário
+    if (!vendaData.codigo || vendaData.codigo.trim() === '') {
+      setVendaData(prev => ({ ...prev, codigo: codigoVenda }));
+    }
+
     // Validar estoque de todos os produtos antes de processar
     for (const item of vendaData.produtos) {
       const produto = obterProduto(item.produtoId);
@@ -854,6 +912,7 @@ const Saidas = () => {
         })),
         veiculo: vendaData.veiculo.trim() || null,
         observacoes: vendaData.observacoes.trim() || null,
+        codigo: codigoVenda,
         status: vendaData.status || 'Em Aberto',
         desconto: parseFloat(vendaData.desconto) || 0,
         data: vendaData.data ? (() => {
@@ -911,7 +970,7 @@ const Saidas = () => {
       await carregarVendas();
 
       // Limpar formulário e fechar diálogo
-      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
+      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', codigo: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
       setProdutoTemporario({ produtoId: '', quantidade: '', fracionado: false });
       setServicoTemporario({ descricao: '', valor: '', quantidade: '1' });
       setVendaParaEditar(null);
@@ -949,15 +1008,61 @@ const Saidas = () => {
     return total;
   };
 
+  // Função para gerar código único no formato VND + número sequencial
+  const gerarCodigoVenda = async () => {
+    try {
+      // Buscar todas as vendas do usuário ordenadas por código
+      const { data, error } = await supabase
+        .from('vendas')
+        .select('codigo')
+        .eq('user_id', user.id)
+        .not('codigo', 'is', null)
+        .order('codigo', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar códigos de venda:', error);
+        // Se houver erro, usar timestamp como fallback
+        return `VND${Date.now()}`;
+      }
+
+      // Encontrar o maior número sequencial
+      let maiorNumero = 0;
+      if (data && data.length > 0) {
+        for (const venda of data) {
+          if (venda.codigo && venda.codigo.startsWith('VND')) {
+            const numero = parseInt(venda.codigo.replace('VND', ''));
+            if (!isNaN(numero) && numero > maiorNumero) {
+              maiorNumero = numero;
+            }
+          }
+        }
+      }
+
+      // Gerar próximo código
+      const proximoNumero = maiorNumero + 1;
+      return `VND${proximoNumero}`;
+    } catch (error) {
+      console.error('Erro ao gerar código de venda:', error);
+      // Fallback usando timestamp
+      return `VND${Date.now()}`;
+    }
+  };
+
   // Limpar dados ao fechar diálogo
-  const handleDialogClose = (open) => {
+  const handleDialogClose = async (open) => {
     setVendaDialogOpen(open);
     if (open) {
       // Recarregar dados ao abrir o diálogo
       carregarClientes();
       carregarProdutos();
+      
+      // Gerar código único apenas para nova venda (não edição)
+      if (!vendaParaEditar) {
+        const novoCodigo = await gerarCodigoVenda();
+        setVendaData(prev => ({ ...prev, codigo: novoCodigo }));
+      }
     } else {
-      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
+      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', codigo: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
       setProdutoTemporario({ produtoId: '', quantidade: '', fracionado: false });
       setServicoTemporario({ descricao: '', valor: '', quantidade: '1' });
       setClienteSearch('');
@@ -989,13 +1094,13 @@ const Saidas = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Saídas (PDV)</h1>
-          <p className="text-muted-foreground mt-2">
-            Ponto de venda e registros de saída
-          </p>
+          <h1 className="h1">Saídas (PDV)</h1>
+                      <p className="text-muted-foreground mt-2 text-pretty">
+              Ponto de venda e registros de saída
+            </p>
         </div>
         <Dialog open={vendaDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
@@ -1260,6 +1365,22 @@ const Saidas = () => {
                               </div>
                             </div>
                           </div>
+                          <div>
+                            <Label className="text-[10px] text-muted-foreground mb-0.5 block">Status</Label>
+                            <Select
+                              value={vendaData.status}
+                              onValueChange={(value) => setVendaData(prev => ({ ...prev, status: value }))}
+                            >
+                              <SelectTrigger className="w-full h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Pago">Pago</SelectItem>
+                                <SelectItem value="Em Aberto">Em Aberto</SelectItem>
+                                <SelectItem value="Orçamento">Orçamento</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </Card>
                     </div>
@@ -1290,20 +1411,14 @@ const Saidas = () => {
                             />
                           </div>
                           <div>
-                            <Label className="text-[10px] text-muted-foreground mb-0.5 block">Status</Label>
-                            <Select
-                              value={vendaData.status}
-                              onValueChange={(value) => setVendaData(prev => ({ ...prev, status: value }))}
-                            >
-                              <SelectTrigger className="w-full h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Pago">Pago</SelectItem>
-                                <SelectItem value="Em Aberto">Em Aberto</SelectItem>
-                                <SelectItem value="Orçamento">Orçamento</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Label className="text-[10px] text-muted-foreground mb-0.5 block">Código</Label>
+                            <Input
+                              type="text"
+                              placeholder="Código da venda..."
+                              value={vendaData.codigo}
+                              readOnly
+                              className="w-full h-8 text-xs bg-muted cursor-not-allowed"
+                            />
                           </div>
                         </div>
                       </Card>
@@ -1434,34 +1549,29 @@ const Saidas = () => {
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-[10px] p-1.5 text-right">R$ {preco > 0 ? formatarMoeda(preco) : '0,00'}</TableCell>
-                                  <TableCell className="text-[10px] p-1.5 text-right font-bold">R$ {subtotal > 0 ? formatarMoeda(subtotal) : '0,00'}</TableCell>
-                                  <TableCell className="text-[10px] p-1.5">
-                                    <Badge 
-                                      variant={
-                                        vendaData.status === 'Pago' ? 'default' : 
-                                        vendaData.status === 'Em Aberto' ? 'secondary' : 
-                                        'outline'
-                                      }
-                                      className={
-                                        vendaData.status === 'Pago' ? 'bg-green-500 hover:bg-green-600' : 
-                                        vendaData.status === 'Em Aberto' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 
-                                        'bg-blue-500 hover:bg-blue-600 text-white'
-                                      }
-                                    >
-                                      {vendaData.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-[10px] p-1.5">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-5 w-5"
-                                      onClick={() => handleRemoverProduto(index)}
-                                    >
-                                      <Trash2 className="h-3 w-3 text-destructive" />
-                                    </Button>
-                                  </TableCell>
+                                                                      <TableCell className="text-[10px] p-1.5 text-right font-bold">R$ {subtotal > 0 ? formatarMoeda(subtotal) : '0,00'}</TableCell>
+                                    <TableCell className="text-[10px] p-1.5">
+                                      <Badge
+                                        variant={
+                                          vendaData.status === 'Pago' ? 'success' :
+                                          vendaData.status === 'Em Aberto' ? 'warning' :
+                                          'info'
+                                        }
+                                      >
+                                        {vendaData.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-[10px] p-1.5">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5"
+                                        onClick={() => handleRemoverProduto(index)}
+                                      >
+                                        <Trash2 className="h-3 w-3 text-destructive" />
+                                      </Button>
+                                    </TableCell>
                                 </TableRow>
                               );
                             })}
@@ -1505,19 +1615,14 @@ const Saidas = () => {
                                       </Button>
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-[10px] p-1.5 text-right">R$ {formatarMoeda(valor)}</TableCell>
+                                                                    <TableCell className="text-[10px] p-1.5 text-right">R$ {formatarMoeda(valor)}</TableCell>
                                   <TableCell className="text-[10px] p-1.5 text-right font-bold">R$ {formatarMoeda(subtotal)}</TableCell>
                                   <TableCell className="text-[10px] p-1.5">
-                                    <Badge 
+                                    <Badge
                                       variant={
-                                        vendaData.status === 'Pago' ? 'default' : 
-                                        vendaData.status === 'Em Aberto' ? 'secondary' : 
-                                        'outline'
-                                      }
-                                      className={
-                                        vendaData.status === 'Pago' ? 'bg-green-500 hover:bg-green-600' : 
-                                        vendaData.status === 'Em Aberto' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 
-                                        'bg-blue-500 hover:bg-blue-600 text-white'
+                                        vendaData.status === 'Pago' ? 'success' :
+                                        vendaData.status === 'Em Aberto' ? 'warning' :
+                                        'info'
                                       }
                                     >
                                       {vendaData.status}
@@ -1741,13 +1846,17 @@ const Saidas = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground text-center py-8">
-              Carregando...
-            </p>
+            <Loading text="Carregando vendas..." />
           ) : vendas.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Nenhuma venda registrada ainda. Clique em "Nova Venda" para começar.
-            </p>
+            <EmptyState
+              icon={ShoppingCart}
+              title="Nenhuma venda registrada"
+              description="Comece registrando uma nova venda no sistema."
+              action={{
+                label: "Nova Venda",
+                onClick: () => setVendaDialogOpen(true)
+              }}
+            />
           ) : (
             <>
               <div className="mb-4 flex flex-col md:flex-row md:items-center gap-2 justify-between">
@@ -1775,14 +1884,15 @@ const Saidas = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead 
-                        onClick={()=>{setSortBy('data'); setSortAsc(sortBy==='data'?!sortAsc:false);}} 
+                                            <TableHead
+                        onClick={()=>{setSortBy('data'); setSortAsc(sortBy==='data'?!sortAsc:false);}}
                         className="cursor-pointer"
                       >
                         Data {sortBy==='data' ? (sortAsc?'▲':'▼') : ''}
                       </TableHead>
-                      <TableHead 
-                        onClick={()=>{setSortBy('cliente'); setSortAsc(sortBy==='cliente'?!sortAsc:true);}} 
+                      <TableHead>Código</TableHead>
+                      <TableHead
+                        onClick={()=>{setSortBy('cliente'); setSortAsc(sortBy==='cliente'?!sortAsc:true);}}
                         className="cursor-pointer"
                       >
                         Cliente {sortBy==='cliente' ? (sortAsc?'▲':'▼') : ''}
@@ -1799,20 +1909,28 @@ const Saidas = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginated.length === 0 ? (
+                                        {paginated.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          Nenhuma venda encontrada.
+                        <TableCell colSpan={7} className="p-0">
+                          <EmptyState
+                            icon={ShoppingCart}
+                            title="Nenhuma venda encontrada"
+                            description={search.trim() !== ''
+                              ? `Nenhuma venda corresponde à busca "${search}".`
+                              : "Tente ajustar os filtros de busca."}
+                            className="py-8"
+                          />
                         </TableCell>
                       </TableRow>
                     ) : paginated.map((venda, idx) => {
                       const cliente = venda.clienteId !== null ? obterCliente(venda.clienteId) : null;
                       const totalItens = (venda.produtos?.length || 0) + (venda.servicos?.length || 0);
                       const status = venda.status || 'Em Aberto';
-                      
+
                       return (
                         <TableRow key={venda.id || idx}>
                           <TableCell>{formatarData(venda.data)}</TableCell>
+                          <TableCell>{venda.codigo || ''}</TableCell>
                           <TableCell>
                             {cliente ? cliente.nome : <Badge variant="secondary">Venda à Vista</Badge>}
                           </TableCell>
@@ -1822,22 +1940,17 @@ const Saidas = () => {
                           <TableCell className="text-right font-semibold">
                             R$ {venda.total ? formatarMoeda(venda.total) : '0,00'}
                           </TableCell>
-                          <TableCell className="text-center">
-                            <Badge 
-                              variant={
-                                status === 'Pago' ? 'default' : 
-                                status === 'Em Aberto' ? 'secondary' : 
-                                'outline'
-                              }
-                              className={
-                                status === 'Pago' ? 'bg-green-500 hover:bg-green-600 text-white' : 
-                                status === 'Em Aberto' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 
-                                'bg-blue-500 hover:bg-blue-600 text-white'
-                              }
-                            >
-                              {status}
-                            </Badge>
-                          </TableCell>
+                                                      <TableCell className="text-center">
+                              <Badge
+                                variant={
+                                  status === 'Pago' ? 'success' :
+                                  status === 'Em Aberto' ? 'warning' :
+                                  'info'
+                                }
+                              >
+                                {status}
+                              </Badge>
+                            </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1850,21 +1963,25 @@ const Saidas = () => {
                                   <Eye className="mr-2 h-4 w-4" />
                                   Visualizar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEmitirNota(idx)}>
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Emitir Nota
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditarVenda(idx)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleExcluirVenda(idx)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
-                                </DropdownMenuItem>
+                                                                  <DropdownMenuItem onClick={() => handleEmitirNota(idx)}>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Emitir Nota
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleMudarStatus(idx)}>
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Mudar Status
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditarVenda(idx)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleExcluirVenda(idx)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Excluir
+                                  </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -1910,25 +2027,20 @@ const Saidas = () => {
                     {new Date(vendaParaVisualizar.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </Card>
-                <Card className="p-4">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status</Label>
-                  <div className="mt-1">
-                    <Badge 
-                      variant={
-                        vendaParaVisualizar.status === 'Pago' ? 'default' : 
-                        vendaParaVisualizar.status === 'Em Aberto' ? 'secondary' : 
-                        'outline'
-                      }
-                      className={
-                        vendaParaVisualizar.status === 'Pago' ? 'bg-green-500 hover:bg-green-600 text-white' : 
-                        vendaParaVisualizar.status === 'Em Aberto' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 
-                        'bg-blue-500 hover:bg-blue-600 text-white'
-                      }
-                    >
-                      {vendaParaVisualizar.status || 'Em Aberto'}
-                    </Badge>
-                  </div>
-                </Card>
+                                  <Card className="p-4">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status</Label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={
+                          vendaParaVisualizar.status === 'Pago' ? 'success' :
+                          vendaParaVisualizar.status === 'Em Aberto' ? 'warning' :
+                          'info'
+                        }
+                      >
+                        {vendaParaVisualizar.status || 'Em Aberto'}
+                      </Badge>
+                    </div>
+                  </Card>
                 <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Total da Venda</Label>
                   <p className="font-bold text-2xl text-primary mt-1">R$ {vendaParaVisualizar.total ? formatarMoeda(vendaParaVisualizar.total) : '0,00'}</p>
@@ -2155,31 +2267,97 @@ const Saidas = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de Confirmação de Exclusão */}
-      <AlertDialog open={excluirDialogOpen} onOpenChange={setExcluirDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              {vendaParaExcluir && `Tem certeza que deseja excluir esta venda de R$ ${vendaParaExcluir.total ? formatarMoeda(vendaParaExcluir.total) : '0,00'} realizada em ${formatarData(vendaParaExcluir.data)}? Esta ação não pode ser desfeita e o estoque dos produtos será revertido.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setExcluirDialogOpen(false);
-              setVendaParaExcluir(null);
-            }}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmarExclusao}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {/* Diálogo de Mudança de Status */}
+        <Dialog open={mudarStatusDialogOpen} onOpenChange={setMudarStatusDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Mudar Status da Venda</DialogTitle>
+              <DialogDescription>
+                {vendaParaMudarStatus && (
+                  <>
+                    Selecione o novo status para a venda de R$ {vendaParaMudarStatus.total ? formatarMoeda(vendaParaMudarStatus.total) : '0,00'} realizada em {formatarData(vendaParaMudarStatus.data)}.
+                    {vendaParaMudarStatus.codigo && (
+                      <> Código: {vendaParaMudarStatus.codigo}</>
+                    )}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status Atual</Label>
+                <div>
+                  <Badge
+                    variant={
+                      vendaParaMudarStatus?.status === 'Pago' ? 'success' :
+                      vendaParaMudarStatus?.status === 'Em Aberto' ? 'warning' :
+                      'info'
+                    }
+                  >
+                    {vendaParaMudarStatus?.status || 'Em Aberto'}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="novo-status">Novo Status</Label>
+                <Select value={novoStatus} onValueChange={setNovoStatus}>
+                  <SelectTrigger id="novo-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em Aberto">Em Aberto</SelectItem>
+                    <SelectItem value="Pago">Pago</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMudarStatusDialogOpen(false);
+                  setVendaParaMudarStatus(null);
+                  setNovoStatus('Em Aberto');
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={confirmarMudancaStatus}
+                disabled={novoStatus === (vendaParaMudarStatus?.status || 'Em Aberto')}
+              >
+                Confirmar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Diálogo de Confirmação de Exclusão */}
+        <AlertDialog open={excluirDialogOpen} onOpenChange={setExcluirDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                {vendaParaExcluir && `Tem certeza que deseja excluir esta venda de R$ ${vendaParaExcluir.total ? formatarMoeda(vendaParaExcluir.total) : '0,00'} realizada em ${formatarData(vendaParaExcluir.data)}? Esta ação não pode ser desfeita e o estoque dos produtos será revertido.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setExcluirDialogOpen(false);
+                setVendaParaExcluir(null);
+              }}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmarExclusao}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       {/* Diálogo de Sucesso */}
       <AlertDialog open={sucessoDialogOpen} onOpenChange={setSucessoDialogOpen}>

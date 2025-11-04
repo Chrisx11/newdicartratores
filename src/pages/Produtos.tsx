@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, MapPin, Tag, Ruler, Pencil, Trash2, PackageCheck, MoreVertical, X } from 'lucide-react';
+import { Plus, MapPin, Tag, Ruler, Pencil, Trash2, PackageCheck, MoreVertical, X, Package } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -315,13 +318,13 @@ const Produtos = () => {
   const paginated = produtosFiltrados.slice((page-1)*perPage, page*perPage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Produtos</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie seu estoque de produtos
-          </p>
+          <h1 className="h1">Produtos</h1>
+                      <p className="text-muted-foreground mt-2 text-pretty">
+              Gerencie seu estoque de produtos
+            </p>
         </div>
         <div className="flex gap-2">
           <Dialog open={localDialogOpen} onOpenChange={setLocalDialogOpen}>
@@ -695,11 +698,11 @@ const Produtos = () => {
                   <TableHead onClick={()=>{setSortBy('codigo'); setSortAsc(sortBy==='codigo'?!sortAsc:true);}} className="cursor-pointer">Código {sortBy==='codigo' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('descricao'); setSortAsc(sortBy==='descricao'?!sortAsc:true);}} className="cursor-pointer">Descrição {sortBy==='descricao' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('categoria'); setSortAsc(sortBy==='categoria'?!sortAsc:true);}} className="cursor-pointer">Categoria {sortBy==='categoria' ? (sortAsc?'▲':'▼') : ''}</TableHead>
-                  <TableHead onClick={()=>{setSortBy('unidade'); setSortAsc(sortBy==='unidade'?!sortAsc:true);}} className="cursor-pointer">Unidade {sortBy==='unidade' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('corredor'); setSortAsc(sortBy==='corredor'?!sortAsc:true);}} className="cursor-pointer">Corredor {sortBy==='corredor' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('prateleira'); setSortAsc(sortBy==='prateleira'?!sortAsc:true);}} className="cursor-pointer">Prateleira {sortBy==='prateleira' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('sessao'); setSortAsc(sortBy==='sessao'?!sortAsc:true);}} className="cursor-pointer">Sessão {sortBy==='sessao' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('estoque'); setSortAsc(sortBy==='estoque'?!sortAsc:true);}} className="cursor-pointer">Estoque {sortBy==='estoque' ? (sortAsc?'▲':'▼') : ''}</TableHead>
+                  <TableHead onClick={()=>{setSortBy('unidade'); setSortAsc(sortBy==='unidade'?!sortAsc:true);}} className="cursor-pointer">Unidade {sortBy==='unidade' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead onClick={()=>{setSortBy('preco'); setSortAsc(sortBy==='preco'?!sortAsc:true);}} className="cursor-pointer text-right">Valor Unitário {sortBy==='preco' ? (sortAsc?'▲':'▼') : ''}</TableHead>
                   <TableHead className="text-right">Valor Total</TableHead>
                   <TableHead className="w-20">Ações</TableHead>
@@ -707,12 +710,27 @@ const Produtos = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
-                  </TableRow>
+                  <TableRowSkeleton colCount={11} />
                 ) : paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Nenhum produto encontrado.</TableCell>
+                    <TableCell colSpan={11} className="p-0">
+                      <EmptyState
+                        icon={Package}
+                        title={produtos.length === 0 
+                          ? "Nenhum produto cadastrado" 
+                          : "Nenhum produto encontrado"}
+                        description={produtos.length === 0
+                          ? "Comece adicionando seu primeiro produto ao catálogo."
+                          : search.trim() !== ''
+                            ? `Nenhum produto corresponde à busca "${search}".`
+                            : "Tente ajustar os filtros de busca."}
+                        action={produtos.length === 0 ? {
+                          label: "Cadastrar Produto",
+                          onClick: () => setProdutoDialogOpen(true)
+                        } : undefined}
+                        className="py-8"
+                      />
+                    </TableCell>
                   </TableRow>
                 ) : paginated.map((p, idx) => {
                   const realIdx = (page-1)*perPage+idx;
@@ -724,11 +742,11 @@ const Produtos = () => {
                       <TableCell>{p.codigo}</TableCell>
                       <TableCell>{p.descricao}</TableCell>
                       <TableCell>{p.categoria}</TableCell>
-                      <TableCell>{p.unidade}</TableCell>
                       <TableCell>{p.corredor}</TableCell>
                       <TableCell>{p.prateleira}</TableCell>
                       <TableCell>{p.sessao}</TableCell>
                       <TableCell>{p.estoque || '0'}</TableCell>
+                      <TableCell>{p.unidade}</TableCell>
                       <TableCell className="text-right">
                         {preco > 0 ? `R$ ${formatarMoeda(preco)}` : '-'}
                       </TableCell>

@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreVertical, Users } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -221,11 +224,11 @@ const Clientes = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="h1">Clientes</h1>
+          <p className="text-muted-foreground mt-2 text-pretty">
             Gerencie seus clientes
           </p>
         </div>
@@ -325,12 +328,24 @@ const Clientes = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
-                  </TableRow>
+                  <TableRowSkeleton colCount={6} />
                 ) : paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum cliente encontrado.</TableCell>
+                    <TableCell colSpan={6} className="p-0">
+                      <EmptyState
+                        icon={Users}
+                        title={clientesFiltrados.length === 0 && clientes.length === 0 
+                          ? "Nenhum cliente cadastrado" 
+                          : "Nenhum cliente encontrado"}
+                        description={clientesFiltrados.length === 0 && clientes.length === 0
+                          ? "Comece adicionando seu primeiro cliente ao sistema."
+                          : `Nenhum cliente corresponde à busca "${search}".`}
+                        action={clientesFiltrados.length === 0 && clientes.length === 0 ? {
+                          label: "Cadastrar Cliente",
+                          onClick: () => setDialogOpen(true)
+                        } : undefined}
+                      />
+                    </TableCell>
                   </TableRow>
                 ) : paginated.map((c, idx) => {
                   const realIdx = (page-1)*perPage+idx;

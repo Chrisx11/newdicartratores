@@ -1,11 +1,11 @@
 import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  ArrowDownToLine, 
-  ShoppingCart, 
-  Sun, 
-  Moon, 
+  LayoutDashboard,
+  Users,
+  Package,
+  ArrowDownToLine,
+  ShoppingCart,
+  Sun,
+  Moon,
   LogOut,
   Truck
 } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -53,18 +54,26 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
+            <SidebarHeader className="!pt-6">
+        <div className="flex items-center justify-center">
+          {!collapsed && (
+            <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">                                          
+              Dicar Tratores
+            </span>
+          )}
+          {collapsed && (
+            <img
+              src="/favicon.svg"
+              alt="Dicar Tratores"
+              className="h-7 w-7"
+            />
+          )}
+        </div>
+      </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/80 px-4 py-3">
-            {!collapsed && (
-              <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Dicar Tratores
-              </span>
-            )}
-            {collapsed && <span className="text-lg font-bold">DT</span>}
-          </SidebarGroupLabel>
+        <SidebarGroup className="p-0">
           <Separator className="my-2" />
-          <SidebarGroupContent>
+          <SidebarGroupContent className="px-2">
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>

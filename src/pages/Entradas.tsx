@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreVertical, ArrowDownToLine, Package } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -367,13 +370,13 @@ const Entradas = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Entradas</h1>
-          <p className="text-muted-foreground mt-2">
-            Registre entradas de estoque
-          </p>
+          <h1 className="h1">Entradas</h1>
+                      <p className="text-muted-foreground mt-2 text-pretty">
+              Registre entradas de estoque
+            </p>
         </div>
         <Dialog open={entradaDialogOpen} onOpenChange={(open) => {
           setEntradaDialogOpen(open);
@@ -466,13 +469,17 @@ const Entradas = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground text-center py-8">
-              Carregando...
-            </p>
+            <Loading text="Carregando entradas..." />
           ) : entradas.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">
-            Nenhuma entrada registrada ainda. Clique em "Nova Entrada" para começar.
-          </p>
+            <EmptyState
+              icon={ArrowDownToLine}
+              title="Nenhuma entrada registrada"
+              description="Comece registrando uma nova entrada de produto no estoque."
+              action={{
+                label: "Nova Entrada",
+                onClick: () => setEntradaDialogOpen(true)
+              }}
+            />
           ) : (
             <>
               <div className="mb-4 flex flex-col md:flex-row md:items-center gap-2 justify-between">
@@ -518,20 +525,28 @@ const Entradas = () => {
                       >
                         Descrição {sortBy==='descricao' ? (sortAsc?'▲':'▼') : ''}
                       </TableHead>
-                      <TableHead 
-                        onClick={()=>{setSortBy('quantidade'); setSortAsc(sortBy==='quantidade'?!sortAsc:true);}} 
+                                            <TableHead
+                        onClick={()=>{setSortBy('quantidade'); setSortAsc(sortBy==='quantidade'?!sortAsc:true);}}
                         className="cursor-pointer"
                       >
                         Quantidade {sortBy==='quantidade' ? (sortAsc?'▲':'▼') : ''}
                       </TableHead>
+                      <TableHead>Unidade</TableHead>
                       <TableHead className="w-20">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginated.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          Nenhuma entrada encontrada.
+                        <TableCell colSpan={6} className="p-0">
+                          <EmptyState
+                            icon={ArrowDownToLine}
+                            title="Nenhuma entrada encontrada"
+                            description={entradasFiltradas.length === 0 && entradas.length > 0
+                              ? `Nenhuma entrada corresponde à busca "${search}".`
+                              : "Tente ajustar os filtros de busca."}
+                            className="py-8"
+                          />
                         </TableCell>
                       </TableRow>
                     ) : paginated.map((entrada, idx) => {
@@ -543,7 +558,8 @@ const Entradas = () => {
                           <TableCell>{formatarData(entrada.data)}</TableCell>
                           <TableCell>{produto.codigo}</TableCell>
                           <TableCell>{produto.descricao}</TableCell>
-                          <TableCell>{entrada.quantidade} {produto.unidade || ''}</TableCell>
+                          <TableCell>{entrada.quantidade}</TableCell>
+                          <TableCell>{produto.unidade || ''}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

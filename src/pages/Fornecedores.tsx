@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreVertical, Truck } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
@@ -218,11 +221,11 @@ const Fornecedores = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Fornecedores</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="h1">Fornecedores</h1>
+          <p className="text-muted-foreground mt-2 text-pretty">
             Gerencie seus fornecedores
           </p>
         </div>
@@ -327,12 +330,27 @@ const Fornecedores = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
-                  </TableRow>
+                  <TableRowSkeleton colCount={7} />
                 ) : paginated.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum fornecedor encontrado.</TableCell>
+                    <TableCell colSpan={7} className="p-0">
+                      <EmptyState
+                        icon={Truck}
+                        title={fornecedores.length === 0 
+                          ? "Nenhum fornecedor cadastrado" 
+                          : "Nenhum fornecedor encontrado"}
+                        description={fornecedores.length === 0
+                          ? "Comece adicionando seu primeiro fornecedor ao sistema."
+                          : search.trim() !== ''
+                            ? `Nenhum fornecedor corresponde à busca "${search}".`
+                            : "Tente ajustar os filtros de busca."}
+                        action={fornecedores.length === 0 ? {
+                          label: "Cadastrar Fornecedor",
+                          onClick: () => setDialogOpen(true)
+                        } : undefined}
+                        className="py-8"
+                      />
+                    </TableCell>
                   </TableRow>
                 ) : paginated.map((f, idx) => {
                   const realIdx = (page-1)*perPage+idx;

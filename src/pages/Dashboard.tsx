@@ -350,17 +350,17 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="h1">Dashboard</h1>
+        <p className="text-muted-foreground mt-2 text-pretty">
           Visão geral do seu negócio
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-shadow">
+      <div className="grid grid-responsive md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <Card key={stat.title} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elegant)] transition-all duration-300 animate-fade-in" style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
@@ -387,8 +387,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 shadow-[var(--shadow-card)]">
+      <div className="grid grid-responsive md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-1 md:col-span-2 lg:col-span-4 shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
           <CardHeader>
             <CardTitle>Vendas dos Últimos 30 Dias</CardTitle>
           </CardHeader>
@@ -431,7 +431,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 shadow-[var(--shadow-card)]">
+        <Card className="col-span-1 md:col-span-2 lg:col-span-3 shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
           <CardHeader>
             <CardTitle>Produtos Mais Vendidos</CardTitle>
           </CardHeader>
@@ -460,8 +460,8 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="shadow-[var(--shadow-card)]">
+      <div className="grid grid-responsive md:grid-cols-2">
+        <Card className="shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
           <CardHeader>
             <CardTitle>Vendas Recentes</CardTitle>
           </CardHeader>
@@ -501,8 +501,8 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="flex flex-row items-center justify-between">
+                <Card className="shadow-[var(--shadow-card)] animate-fade-in" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
+          <CardHeader className="flex flex-row items-center justify-between">   
             <CardTitle>Estoque Baixo</CardTitle>
             <AlertTriangle className="h-5 w-5 text-destructive" />
           </CardHeader>
