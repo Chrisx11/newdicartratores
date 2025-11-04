@@ -24,7 +24,6 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
@@ -92,26 +91,22 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Button
-              variant="ghost"
-              size={collapsed ? "icon" : "default"}
+            <SidebarMenuButton
               onClick={toggleTheme}
-              className="w-full justify-start hover:bg-sidebar-accent"
+              className="hover:bg-sidebar-accent"
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              {!collapsed && <span className="ml-2">Trocar Tema</span>}
-            </Button>
+              {!collapsed && <span>Trocar Tema</span>}
+            </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Button
-              variant="ghost"
-              size={collapsed ? "icon" : "default"}
+            <SidebarMenuButton
               onClick={handleLogout}
-              className="w-full justify-start hover:bg-destructive/10 text-destructive"
+              className="hover:bg-destructive/10 text-destructive"
             >
               <LogOut className="h-5 w-5" />
-              {!collapsed && <span className="ml-2">Sair</span>}
-            </Button>
+              {!collapsed && <span>Sair</span>}
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

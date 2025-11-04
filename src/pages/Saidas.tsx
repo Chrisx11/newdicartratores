@@ -59,7 +59,8 @@ const Saidas = () => {
     veiculo: '',
     observacoes: '',
     status: 'Em Aberto',
-    desconto: ''
+    desconto: '',
+    data: new Date().toISOString().split('T')[0] // Data padrão: hoje no formato YYYY-MM-DD
   });
 
   // Estado temporário para adicionar produto/serviço
@@ -426,7 +427,8 @@ const Saidas = () => {
       doc.setFillColor(240, 240, 240);
       doc.rect(margin, tableTop - 4, pageWidth - 2 * margin, 6, 'F');
       
-      addText('Descrição', margin + 5, tableTop, { fontSize: 9, fontStyle: 'bold' });
+      addText('Código', margin + 5, tableTop, { fontSize: 9, fontStyle: 'bold' });
+      addText('Descrição', margin + 30, tableTop, { fontSize: 9, fontStyle: 'bold' });
       addText('Qtd', margin + 100, tableTop, { fontSize: 9, fontStyle: 'bold', align: 'right' });
       addText('Unit.', margin + 115, tableTop, { fontSize: 9, fontStyle: 'bold', align: 'right' });
       addText('Total', margin + 150, tableTop, { fontSize: 9, fontStyle: 'bold', align: 'right' });
@@ -444,7 +446,8 @@ const Saidas = () => {
           yPosition = margin;
         }
 
-        addText(servico.descricao, margin + 5, yPosition, { fontSize: 8 });
+        addText('SERV', margin + 5, yPosition, { fontSize: 8 });
+        addText(servico.descricao, margin + 30, yPosition, { fontSize: 8 });
         addText(quantidade + 'x', margin + 100, yPosition, { fontSize: 8, align: 'right' });
         addText('R$ ' + formatarMoeda(valor), margin + 115, yPosition, { fontSize: 8, align: 'right' });
         addText('R$ ' + formatarMoeda(subtotal), margin + 150, yPosition, { fontSize: 8, align: 'right' });
@@ -581,7 +584,8 @@ const Saidas = () => {
       veiculo: venda.veiculo || '',
       observacoes: venda.observacoes || '',
       status: venda.status || 'Em Aberto',
-      desconto: venda.desconto ? String(venda.desconto) : ''
+      desconto: venda.desconto ? String(venda.desconto) : '',
+      data: venda.data ? new Date(venda.data).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     
     setVendaParaEditar(venda);
@@ -852,6 +856,12 @@ const Saidas = () => {
         observacoes: vendaData.observacoes.trim() || null,
         status: vendaData.status || 'Em Aberto',
         desconto: parseFloat(vendaData.desconto) || 0,
+        data: vendaData.data ? (() => {
+          // Criar data no timezone local para evitar problemas de fuso horário
+          const [year, month, day] = vendaData.data.split('-');
+          const dataLocal = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+          return dataLocal.toISOString();
+        })() : new Date().toISOString(),
         total: total,
         user_id: user.id,
       };
@@ -901,7 +911,7 @@ const Saidas = () => {
       await carregarVendas();
 
       // Limpar formulário e fechar diálogo
-      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '' });
+      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
       setProdutoTemporario({ produtoId: '', quantidade: '', fracionado: false });
       setServicoTemporario({ descricao: '', valor: '', quantidade: '1' });
       setVendaParaEditar(null);
@@ -947,7 +957,7 @@ const Saidas = () => {
       carregarClientes();
       carregarProdutos();
     } else {
-      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '' });
+      setVendaData({ clienteId: null, produtos: [], servicos: [], veiculo: '', observacoes: '', status: 'Em Aberto', desconto: '', data: new Date().toISOString().split('T')[0] });
       setProdutoTemporario({ produtoId: '', quantidade: '', fracionado: false });
       setServicoTemporario({ descricao: '', valor: '', quantidade: '1' });
       setClienteSearch('');
@@ -1005,7 +1015,53 @@ const Saidas = () => {
               {/* Formulário Principal - Lado Esquerdo */}
               <div className="w-[54%] flex flex-col min-h-0 overflow-y-auto border-r bg-background">
                 <div className="pt-1 px-2.5 pb-2.5 space-y-1 flex-1">
-                  {/* Primeira Linha: Cliente | Adicionar Produto */}
+                  {/* Primeira Linha: Data | Desconto */}
+                  <div className="grid grid-cols-4 gap-3">
+                    {/* Data */}
+                    <div className="flex flex-col col-span-2">
+                      <Label className="text-xs font-semibold mb-2 block">Data</Label>
+                      <Card className="p-3 flex-1">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground mb-0.5 block">Data da Venda</Label>
+                          <Input
+                            type="date"
+                            value={vendaData.data}
+                            onChange={(e) => setVendaData(prev => ({ ...prev, data: e.target.value }))}
+                            className="w-full h-8 text-xs"
+                          />
+                        </div>
+                      </Card>
+                    </div>
+                    {/* Desconto */}
+                    <div className="flex flex-col col-span-2">
+                      <Label className="text-xs font-semibold mb-2 block">Desconto</Label>
+                      <Card className="p-3 flex-1">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground mb-0.5 block">Desconto (%)</Label>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={vendaData.desconto}
+                            onChange={(e) => {
+                              const valor = e.target.value;
+                              const numValor = parseFloat(valor) || 0;
+                              if (numValor >= 0 && numValor <= 100) {
+                                setVendaData(prev => ({ ...prev, desconto: valor }));
+                              } else if (valor === '') {
+                                setVendaData(prev => ({ ...prev, desconto: '' }));
+                              }
+                            }}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            className="w-full h-8 text-xs"
+                          />
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Segunda Linha: Cliente | Adicionar Produto */}
                   <div className="grid grid-cols-4 gap-3">
                     {/* Card de Informações do Cliente */}
                     <div className="flex flex-col col-span-2">
@@ -1060,7 +1116,6 @@ const Saidas = () => {
                         )}
                       </Card>
                     </div>
-
                     {/* Adicionar Produtos */}
                     <div className="flex flex-col col-span-2">
                       <div className="flex items-center gap-1.5 mb-2">
@@ -1145,7 +1200,7 @@ const Saidas = () => {
                     </div>
                   </div>
 
-                  {/* Segunda Linha: Adicionar Serviço | Informações Adicionais */}
+                  {/* Terceira Linha: Adicionar Serviço | Informações Adicionais */}
                   <div className="grid grid-cols-4 gap-3">
                     {/* Adicionar Serviços */}
                     <div className="flex flex-col col-span-2">
@@ -1252,40 +1307,6 @@ const Saidas = () => {
                           </div>
                         </div>
                       </Card>
-                    </div>
-                  </div>
-
-                  {/* Terceira Linha: Desconto */}
-                  <div className="grid grid-cols-4 gap-3">
-                    {/* Desconto abaixo de Adicionar Serviço */}
-                    <div className="flex flex-col col-span-2">
-                      <Label className="text-xs font-semibold mb-2 block">Desconto</Label>
-                      <Card className="p-3">
-                        <div>
-                          <Label className="text-[10px] text-muted-foreground mb-0.5 block">Desconto (%)</Label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={vendaData.desconto}
-                            onChange={(e) => {
-                              const valor = e.target.value;
-                              const numValor = parseFloat(valor) || 0;
-                              if (numValor >= 0 && numValor <= 100) {
-                                setVendaData(prev => ({ ...prev, desconto: valor }));
-                              } else if (valor === '') {
-                                setVendaData(prev => ({ ...prev, desconto: '' }));
-                              }
-                            }}
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            className="w-full h-8 text-xs"
-                          />
-                        </div>
-                      </Card>
-                    </div>
-                    {/* Desconto abaixo de Informações Adicionais (espaço vazio para manter alinhamento) */}
-                    <div className="flex flex-col col-span-2">
                     </div>
                   </div>
                 </div>
@@ -1451,7 +1472,7 @@ const Saidas = () => {
                               const subtotal = valor * quantidade;
                               return (
                                 <TableRow key={`servico-${index}`} className="h-auto">
-                                  <TableCell className="text-[10px] p-1.5">-</TableCell>
+                                  <TableCell className="text-[10px] p-1.5 font-semibold text-primary">SERV</TableCell>
                                   <TableCell className="text-[10px] p-1.5 font-medium">{servico.descricao}</TableCell>
                                   <TableCell className="text-[10px] p-1.5">
                                     <div className="flex items-center justify-center gap-0.5">
@@ -1617,12 +1638,12 @@ const Saidas = () => {
                         key={cliente.id}
                         type="button"
                         variant="outline"
-                        className="w-full justify-start h-auto p-4"
+                        className="w-full justify-start h-auto p-4 group"
                         onClick={() => handleSelecionarCliente(cliente.id)}
                       >
                         <div className="flex flex-col items-start w-full">
                           <span className="font-medium">{cliente.nome}</span>
-                          <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                          <div className="flex gap-4 text-sm text-muted-foreground group-hover:text-accent-foreground/80 mt-1">
                             {cliente.doc && (
                               <span>{cliente.tipoDoc}: {cliente.doc}</span>
                             )}
@@ -1685,7 +1706,7 @@ const Saidas = () => {
                       key={index}
                       type="button"
                       variant="outline"
-                      className="w-full justify-start h-auto p-4"
+                      className="w-full justify-start h-auto p-4 group"
                       onClick={() => handleSelecionarProduto(produto.codigo)}
                       disabled={parseFloat(produto.estoque) <= 0}
                     >
@@ -1693,7 +1714,7 @@ const Saidas = () => {
                         <div className="flex justify-between w-full items-center mb-1">
                           <span className="font-medium">{produto.codigo} - {produto.descricao}</span>
                         </div>
-                        <div className="flex justify-between w-full items-center text-sm text-muted-foreground">
+                        <div className="flex justify-between w-full items-center text-sm text-muted-foreground group-hover:text-accent-foreground/80">
                           <span>Estoque: {produto.estoque || '0'} {produto.unidade || ''}</span>
                           {produto.preco && (
                             <span>R$ {formatarMoeda(parseFloat(produto.preco))}</span>
@@ -2043,6 +2064,7 @@ const Saidas = () => {
                       <Table>
                         <TableHeader>
                           <TableRow className="h-9">
+                            <TableHead className="text-xs">Código</TableHead>
                             <TableHead className="text-xs">Descrição</TableHead>
                             <TableHead className="text-xs text-right">Qtd</TableHead>
                             <TableHead className="text-xs text-right">Unit.</TableHead>
@@ -2056,6 +2078,7 @@ const Saidas = () => {
                             const subtotal = valor * quantidade;
                             return (
                               <TableRow key={index}>
+                                <TableCell className="text-xs font-mono font-semibold text-primary">SERV</TableCell>
                                 <TableCell className="text-xs">{servico.descricao}</TableCell>
                                 <TableCell className="text-xs text-right">{quantidade}x</TableCell>
                                 <TableCell className="text-xs text-right">R$ {formatarMoeda(valor)}</TableCell>

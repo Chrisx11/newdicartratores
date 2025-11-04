@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +21,11 @@ function formatarMoeda(valor) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+// Função para ordenação numérica natural (ex: "Prateleira 1", "Prateleira 2", "Prateleira 10")
+function ordenacaoNatural(a, b) {
+  return a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' });
 }
 
 const Produtos = () => {
@@ -343,9 +349,9 @@ const Produtos = () => {
                 {
                   (() => {
                     let uniques;
-                    if(locTab==='corredor') uniques = [...new Set(localizacoes.filter(l=>l.corredor).map(l=>l.corredor))].sort();
-                    if(locTab==='prateleira') uniques = [...new Set(localizacoes.filter(l=>l.prateleira).map(l=>l.prateleira))].sort();
-                    if(locTab==='sessao') uniques = [...new Set(localizacoes.filter(l=>l.sessao).map(l=>l.sessao))].sort();
+                    if(locTab==='corredor') uniques = [...new Set(localizacoes.filter(l=>l.corredor).map(l=>l.corredor))].sort(ordenacaoNatural);
+                    if(locTab==='prateleira') uniques = [...new Set(localizacoes.filter(l=>l.prateleira).map(l=>l.prateleira))].sort(ordenacaoNatural);
+                    if(locTab==='sessao') uniques = [...new Set(localizacoes.filter(l=>l.sessao).map(l=>l.sessao))].sort(ordenacaoNatural);
                     return uniques.length === 0 
                       ? <li className="text-muted-foreground">Nenhum {locTab} cadastrado.</li>
                       : uniques.map((v, i) => (
@@ -580,49 +586,61 @@ const Produtos = () => {
               }}>
                 <Input placeholder="Código" value={novoProduto.codigo} onChange={e=>setNovoProduto(p => ({...p, codigo: e.target.value}))} />
                 <Input placeholder="Descrição" value={novoProduto.descricao} onChange={e=>setNovoProduto(p => ({...p, descricao: e.target.value}))} />
-                <Select value={novoProduto.categoria} onValueChange={v=>setNovoProduto(p=>({...p, categoria: v}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorias.length > 0 && categorias.map((c,i) => <SelectItem key={i} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={novoProduto.unidade} onValueChange={v=>setNovoProduto(p=>({...p, unidade: v}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Unidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unidades.length > 0 && unidades.map((u,i) => <SelectItem key={i} value={u}>{u}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={novoProduto.corredor} onValueChange={v=>setNovoProduto(p=>({...p, corredor: v}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Corredor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[...new Set(localizacoes.filter(l=>l.corredor).map(l=>l.corredor))].length > 0 &&
-                      [...new Set(localizacoes.filter(l=>l.corredor).map(l=>l.corredor))].map((c,i)=><SelectItem key={i} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={novoProduto.prateleira} onValueChange={v=>setNovoProduto(p=>({...p, prateleira: v}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Prateleira" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[...new Set(localizacoes.filter(l=>l.prateleira).map(l=>l.prateleira))].length > 0 &&
-                      [...new Set(localizacoes.filter(l=>l.prateleira).map(l=>l.prateleira))].map((c,i)=><SelectItem key={i} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={novoProduto.sessao} onValueChange={v=>setNovoProduto(p=>({...p, sessao: v}))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sessão" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[...new Set(localizacoes.filter(l=>l.sessao).map(l=>l.sessao))].length > 0 &&
-                      [...new Set(localizacoes.filter(l=>l.sessao).map(l=>l.sessao))].map((c,i)=><SelectItem key={i} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={categorias}
+                  value={novoProduto.categoria}
+                  onValueChange={(v) => setNovoProduto(p => ({...p, categoria: v}))}
+                  placeholder="Categoria"
+                  searchPlaceholder="Buscar categoria..."
+                  emptyMessage="Nenhuma categoria encontrada."
+                />
+                <Combobox
+                  options={unidades}
+                  value={novoProduto.unidade}
+                  onValueChange={(v) => setNovoProduto(p => ({...p, unidade: v}))}
+                  placeholder="Unidade"
+                  searchPlaceholder="Buscar unidade..."
+                  emptyMessage="Nenhuma unidade encontrada."
+                />
+                {(() => {
+                  const corredores = [...new Set(localizacoes.filter(l=>l.corredor).map(l=>l.corredor))].sort(ordenacaoNatural);
+                  return (
+                    <Combobox
+                      options={corredores}
+                      value={novoProduto.corredor}
+                      onValueChange={(v) => setNovoProduto(p => ({...p, corredor: v}))}
+                      placeholder="Corredor"
+                      searchPlaceholder="Buscar corredor..."
+                      emptyMessage="Nenhum corredor encontrado."
+                    />
+                  );
+                })()}
+                {(() => {
+                  const prateleiras = [...new Set(localizacoes.filter(l=>l.prateleira).map(l=>l.prateleira))].sort(ordenacaoNatural);
+                  return (
+                    <Combobox
+                      options={prateleiras}
+                      value={novoProduto.prateleira}
+                      onValueChange={(v) => setNovoProduto(p => ({...p, prateleira: v}))}
+                      placeholder="Prateleira"
+                      searchPlaceholder="Buscar prateleira..."
+                      emptyMessage="Nenhuma prateleira encontrada."
+                    />
+                  );
+                })()}
+                {(() => {
+                  const sessoes = [...new Set(localizacoes.filter(l=>l.sessao).map(l=>l.sessao))].sort(ordenacaoNatural);
+                  return (
+                    <Combobox
+                      options={sessoes}
+                      value={novoProduto.sessao}
+                      onValueChange={(v) => setNovoProduto(p => ({...p, sessao: v}))}
+                      placeholder="Sessão"
+                      searchPlaceholder="Buscar sessão..."
+                      emptyMessage="Nenhuma sessão encontrada."
+                    />
+                  );
+                })()}
                 <Input 
                   type="number" 
                   placeholder="Valor Unitário (R$)" 

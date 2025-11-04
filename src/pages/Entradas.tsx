@@ -679,14 +679,14 @@ const Entradas = () => {
                         key={index}
                         type="button"
                         variant="outline"
-                        className="w-full justify-start h-auto p-4"
+                        className="w-full justify-start h-auto p-4 group"
                         onClick={() => handleSelecionarProduto(produto.codigo)}
                       >
                         <div className="flex flex-col items-start w-full">
                           <div className="flex justify-between w-full items-center mb-1">
                             <span className="font-medium">{produto.codigo} - {produto.descricao}</span>
                           </div>
-                          <div className="flex justify-between w-full items-center text-sm text-muted-foreground">
+                          <div className="flex justify-between w-full items-center text-sm text-muted-foreground group-hover:text-accent-foreground/80">
                             <span>Estoque: {produto.estoque || '0'} {produto.unidade || ''}</span>
                             {produto.categoria && (
                               <span className="text-xs">Categoria: {produto.categoria}</span>

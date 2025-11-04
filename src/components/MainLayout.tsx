@@ -9,7 +9,7 @@ export const MainLayout = () => {
         <AppSidebar />
         <main className="flex-1 p-6 relative">
           <SidebarTrigger className="absolute top-6 left-6 z-10" />
-          <div className="pl-12">
+          <div className="mt-12">
             <Outlet />
           </div>
         </main>
